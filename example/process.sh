@@ -36,7 +36,7 @@ cat $1 | la_strip | la_dedup > $TEMP1
 # Header
 echo "; Processed with LA tools" > $outfile
 echo "; GRBL device profile, absolute coords" >> $outfile
-cat $1 | la_bounds >> $outfile
+cat $TEMP1 | la_bounds >> $outfile
 cat >> $outfile<< EOF
 G00         ; Rapid Travel
 G17         ; XY plane
