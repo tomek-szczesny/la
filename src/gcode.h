@@ -507,4 +507,61 @@ float calculate_cut_distance(Line *lines, int count) {
     return total;
 }
 
+void transform_lines(Line *lines, int count, float m[3][3]) {
+    for (int i = 0; i < count; i++) {
+        float x0 = lines[i].x0;
+        float y0 = lines[i].y0;
+        float x1 = lines[i].x1;
+        float y1 = lines[i].y1;
+        
+        lines[i].x0 = m[0][0] * x0 + m[0][1] * y0 + m[0][2];
+        lines[i].y0 = m[1][0] * x0 + m[1][1] * y0 + m[1][2];
+        lines[i].x1 = m[0][0] * x1 + m[0][1] * y1 + m[0][2];
+        lines[i].y1 = m[1][0] * x1 + m[1][1] * y1 + m[1][2];
+    }
+}
+
+Line bounding_box(Line *lines, int count) {
+    Line bbox = {lines[0].x0, lines[0].y0, lines[0].x0, lines[0].y0, 0, 0};
+    
+    for (int i = 0; i < count; i++) {
+        if (lines[i].x0 < bbox.x0) bbox.x0 = lines[i].x0;
+        if (lines[i].y0 < bbox.y0) bbox.y0 = lines[i].y0;
+        if (lines[i].x1 < bbox.x0) bbox.x0 = lines[i].x1;
+        if (lines[i].y1 < bbox.y0) bbox.y0 = lines[i].y1;
+        if (lines[i].x0 > bbox.x1) bbox.x1 = lines[i].x0;
+        if (lines[i].y0 > bbox.y1) bbox.y1 = lines[i].y0;
+        if (lines[i].x1 > bbox.x1) bbox.x1 = lines[i].x1;
+        if (lines[i].y1 > bbox.y1) bbox.y1 = lines[i].y1;
+    }
+    
+    return bbox;
+}
+
+void translate_lines(Line *lines, int count, float tx, float ty) {
+    float m[3][3] = {
+        {1, 0, tx},
+        {0, 1, ty},
+        {0, 0, 1}
+    };
+    transform_lines(lines, count, m);
+}
+
+// Rotate around the center of a bounding box
+void rotate_lines(Line *lines, int count, float angle_deg) {
+    Line bbox = bounding_box(lines, count);
+    float cx = (bbox.x0 + bbox.x1) / 2.0f;
+    float cy = (bbox.y0 + bbox.y1) / 2.0f;
+    
+    float rad = angle_deg * 3.14159265f / 180.0f;
+    float c = cosf(rad);
+    float s = sinf(rad);
+    
+    float m[3][3] = {
+        {c, -s, cx - cx*c + cy*s},
+        {s, c, cy - cx*s - cy*c},
+        {0, 0, 1}
+    };
+    transform_lines(lines, count, m);
+}
 
