@@ -5,6 +5,9 @@
 #include <math.h>
 #include "line.h"
 
+#ifndef gcode_h
+#define gcode_h
+
 typedef struct {
     char c;      // Capital letter token
     int i;       // Integer value
@@ -227,3 +230,4 @@ void export_gcode(Line *lines, int count) {
     }
 }
 
+#endif

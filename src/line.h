@@ -4,12 +4,24 @@
 #include <ctype.h>
 #include <math.h>
 
+#ifndef line_h
+#define line_h
+
 typedef struct {
     float x0, y0;  // start point (from previous line)
     float x1, y1;  // end point (current G1)
     float s;       // power (S parameter)
     float f;       // feed rate (F parameter)
 } Line;
+
+// Transform matrices
+// a c e
+// b d f
+// 0 0 1
+typedef struct {
+    double a, b, c, d, e, f;
+} Matrix;
+
 
 // Compare function for qsort
 int compare_lines(const void *a, const void *b) {
@@ -285,20 +297,6 @@ float calculate_cut_distance(Line *lines, int count) {
     return total;
 }
 
-void transform_lines(Line *lines, int count, float m[3][3]) {
-    for (int i = 0; i < count; i++) {
-        float x0 = lines[i].x0;
-        float y0 = lines[i].y0;
-        float x1 = lines[i].x1;
-        float y1 = lines[i].y1;
-        
-        lines[i].x0 = m[0][0] * x0 + m[0][1] * y0 + m[0][2];
-        lines[i].y0 = m[1][0] * x0 + m[1][1] * y0 + m[1][2];
-        lines[i].x1 = m[0][0] * x1 + m[0][1] * y1 + m[0][2];
-        lines[i].y1 = m[1][0] * x1 + m[1][1] * y1 + m[1][2];
-    }
-}
-
 Line bounding_box(Line *lines, int count) {
     Line bbox = {lines[0].x0, lines[0].y0, lines[0].x0, lines[0].y0, 0, 0};
     
@@ -316,30 +314,52 @@ Line bounding_box(Line *lines, int count) {
     return bbox;
 }
 
-void translate_lines(Line *lines, int count, float tx, float ty) {
-    float m[3][3] = {
-        {1, 0, tx},
-        {0, 1, ty},
-        {0, 0, 1}
+// Transform related code below // 
+
+Matrix matrix_multiply(Matrix a, Matrix b) {
+    return (Matrix){
+        a.a * b.a + a.b * b.c,
+        a.a * b.b + a.b * b.d,
+        a.c * b.a + a.d * b.c,
+        a.c * b.b + a.d * b.d,
+        a.e * b.a + a.f * b.c + b.e,
+        a.e * b.b + a.f * b.d + b.f
     };
+}
+
+void transform_line(Line *line, Matrix m) {
+    float x0 = line->x0, y0 = line->y0;
+    float x1 = line->x1, y1 = line->y1;
+    
+    line->x0 = m.a * x0 + m.c * y0 + m.e;
+    line->y0 = m.b * x0 + m.d * y0 + m.f;
+    line->x1 = m.a * x1 + m.c * y1 + m.e;
+    line->y1 = m.b * x1 + m.d * y1 + m.f;
+}
+
+void transform_lines(Line *lines, int count, Matrix m) {
+    for (int i = 0; i < count; i++) {
+        transform_line(&lines[i], m);
+    }
+}
+
+void translate_lines(Line *lines, int count, float tx, float ty) {
+    Matrix m = {1, 0, 0, 1, tx, ty};
     transform_lines(lines, count, m);
 }
 
 // Rotate around the center of a bounding box
 void rotate_lines(Line *lines, int count, float angle_deg) {
     Line bbox = bounding_box(lines, count);
-    float cx = (bbox.x0 + bbox.x1) / 2.0f;
-    float cy = (bbox.y0 + bbox.y1) / 2.0f;
+    float cx = (bbox.x0 + bbox.x1) / 2;
+    float cy = (bbox.y0 + bbox.y1) / 2;
     
     float rad = angle_deg * 3.14159265f / 180.0f;
     float c = cosf(rad);
     float s = sinf(rad);
     
-    float m[3][3] = {
-        {c, -s, cx - cx*c + cy*s},
-        {s, c, cy - cx*s - cy*c},
-        {0, 0, 1}
-    };
+    Matrix m = {c, s, -s, c, cx - cx*c + cy*s, cy - cx*s - cy*c};
     transform_lines(lines, count, m);
 }
 
+#endif
