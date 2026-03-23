@@ -122,24 +122,25 @@ void handle_rect(xmlNodePtr node, Matrix transform) {
     plot_line(x + rx, y, transform);
 }
 
-// Parse circle: approximate with line segments (8 segments for now)
 void handle_circle(xmlNodePtr node, Matrix transform) {
     float cx = getattrf(node, "cx");
     float cy = getattrf(node, "cy");
     float r = getattrf(node, "r");
-    
-    int segments = 8;
-    for (int i = 0; i < segments; i++) {
-        float angle1 = 2.0f * M_PI * i / segments;
-        float angle2 = 2.0f * M_PI * (i + 1) / segments;
-        
-        float x0 = cx + r * cosf(angle1);
-        float y0 = cy + r * sinf(angle1);
-        float x1 = cx + r * cosf(angle2);
-        float y1 = cy + r * sinf(angle2);
-        
-        add_line(x0, y0, x1, y1, transform);
-    }
+
+    float k = BEZIER_CIRCLE_K * r;
+
+    // Start at rightmost point
+    path_x = cx + r;
+    path_y = cy;
+
+    // Top-right quadrant
+    plot_cubic_bezier(cx + r, cy + k, cx + k, cy + r, cx, cy + r, transform, max_error);
+    // Top-left quadrant
+    plot_cubic_bezier(cx - k, cy + r, cx - r, cy + k, cx - r, cy, transform, max_error);
+    // Bottom-left quadrant
+    plot_cubic_bezier(cx - r, cy - k, cx - k, cy - r, cx, cy - r, transform, max_error);
+    // Bottom-right quadrant
+    plot_cubic_bezier(cx + k, cy - r, cx + r, cy - k, cx + r, cy, transform, max_error);
 }
 
 void handle_ellipse(xmlNodePtr node, Matrix transform) {
@@ -157,13 +158,10 @@ void handle_ellipse(xmlNodePtr node, Matrix transform) {
 
     // Top-right quadrant
     plot_cubic_bezier(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry, transform, max_error);
-
     // Top-left quadrant
     plot_cubic_bezier(cx - kx, cy + ry, cx - rx, cy + ky, cx - rx, cy, transform, max_error);
-
     // Bottom-left quadrant
     plot_cubic_bezier(cx - rx, cy - ky, cx - kx, cy - ry, cx, cy - ry, transform, max_error);
-
     // Bottom-right quadrant
     plot_cubic_bezier(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy, transform, max_error);
 }
@@ -191,10 +189,8 @@ void walk_tree(xmlNodePtr node, Matrix transform) {
 fprintf(stderr, "Now in node: %s\n", name);
 
     // Check if this element has a path
-    //const char *path_data = getattrs(node, "d");
     const char *path_data = getpath(node);
     if (*path_data) {
-fprintf(stderr, "(Treated as a path)\n");
         parse_path_data(path_data, combined, max_error);
         return; // Path elements don't have children to process
     }
