@@ -4,6 +4,7 @@ default:
 	gcc -lm la_position.c -o la_position
 	gcc -lm la_rotate.c -o la_rotate
 	gcc -lm la_strip.c -o la_strip
+	gcc -lm la_svg2g.c -o la_svg2g -lxml2 -I/usr/include/libxml2
 
 install:
 	install -p -s la_bounds /usr/bin
