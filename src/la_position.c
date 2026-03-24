@@ -22,7 +22,11 @@ int main(int argc, char *argv[]) {
     }
     
     Line bb = bounding_box(lines, count);
-    translate_lines(lines, count, x - bb.x0, y - bb.y0);
+    x -= bb.x0;
+    y -= bb.y0;
+    translate_lines(lines, count, x, y);
+
+    fprintf(stderr, "Moved by (%g, %g).\n", x, y);
 
     export_gcode(lines, count);
 

@@ -9,7 +9,7 @@
 #include "svg_transform.h"
 #include "svg_path.h"
 
-float max_error = 0.01f;
+float max_error = 0.05f;
 
 // Lines array
 int lines_cap = 100;
@@ -186,7 +186,7 @@ void walk_tree(xmlNodePtr node, Matrix transform) {
     Matrix combined = matrix_multiply(transform, node_transform);
 
     const char *name = getname(node);
-fprintf(stderr, "Now in node: %s\n", name);
+//fprintf(stderr, "Now in node: %s\n", name);
 
     // Check if this element has a path
     const char *path_data = getpath(node);
@@ -234,7 +234,7 @@ void parse_svg() {
 
 int main() {
     parse_svg();
-    fprintf(stderr, "Parsed %d lines\n", lines_count);
+    fprintf(stderr, "Parsed %d cut lines from the input SVG file.\n", lines_count);
     export_gcode(lines, lines_count);
     free(lines);
     return 0;

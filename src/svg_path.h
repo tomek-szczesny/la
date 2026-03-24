@@ -32,7 +32,7 @@ const char* getpath(xmlNodePtr node) {
         buf_size = needed * 2;
         buf = realloc(buf, buf_size);
     }
-    fprintf(stderr, "needed: %g\t buf_size: %g\n", needed, buf_size);
+//    fprintf(stderr, "needed: %d\t buf_size: %d\n", needed, buf_size);
     
     strcpy(buf, (const char*)val);
     xmlFree(val);
@@ -71,10 +71,7 @@ static float next_number() {
     
     char *endptr;
     float val = strtof(tokenizer.str + tokenizer.pos, &endptr);
-    fprintf(stderr, "next_number: found number %g\tlength: %d\t", val, 
-            (endptr - (tokenizer.str + tokenizer.pos)));
     tokenizer.pos += (endptr - (tokenizer.str + tokenizer.pos));
-    fprintf(stderr, "next char:%c\n", tokenizer.str[tokenizer.pos]);
     
     return val;
 }

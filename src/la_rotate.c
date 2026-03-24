@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
         if (minx) fprintf(stderr, "Warning: -minx flag ignored.\n");
         if (miny) fprintf(stderr, "Warning: -miny flag ignored.\n");
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %.2f degrees.\n", a);
+        fprintf(stderr, "Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
         if (miny) fprintf(stderr, "Warning: -miny flag ignored.\n");
         a = optimize_dimension(lines, count, 0, 0.001);
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %.2f degrees.\n", a);
+        fprintf(stderr, "Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
     if (miny) {
         a = optimize_dimension(lines, count, 1, 0.001);
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %.2f degrees.\n", a);
+        fprintf(stderr, "Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
