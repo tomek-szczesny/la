@@ -37,16 +37,10 @@ static void _set_line_color(cairo_t *cr, int index, int count, Line *line, PlotO
 
     if (opts.color_gradient) {
         float t = (count > 1) ? (float)index / (count - 1) : 0;
-        // Red (1,0,0) → Yellow (1,1,0) → Green (0,1,0)
-        if (t < 0.5) {
-            r = 1.0;
-            g = t * 2.0;
-            b = 0.0;
-        } else {
-            r = 1.0 - (t - 0.5) * 2.0;
-            g = 1.0;
-            b = 0.0;
-        }
+        // Red (0.7,0,0) → Blue (0.2,0.2,1)
+        r = (1 - t) * 0.5 + 0.2;
+        g = 0.2 * t;
+        b = t;
     } else {
         r = g = b = 0.0;
     }
@@ -87,7 +81,7 @@ static void _plot_axes_and_grid(cairo_t *cr, Line *lines, int count) {
     // Grid
     int step_x = _grid_step(plot_width);
     int step_y = _grid_step(plot_height);
-    cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
     cairo_set_line_width(cr, 0.1);
 
     for (int x = (int)ceil(view_x0 / step_x) * step_x; x <= view_x1; x += step_x) {
@@ -101,8 +95,8 @@ static void _plot_axes_and_grid(cairo_t *cr, Line *lines, int count) {
     cairo_stroke(cr);
 
     // Axes
-    cairo_set_source_rgb(cr, 0, 0, 0);
-    cairo_set_line_width(cr, 0.1);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
+    cairo_set_line_width(cr, 0.2);
     cairo_move_to(cr, view_x0, 0);
     cairo_line_to(cr, view_x1, 0);
     cairo_move_to(cr, 0, view_y0);
@@ -118,8 +112,14 @@ static void _draw_fast_move(cairo_t *cr, Line *lines, int i, PlotOptions opts) {
     float curr_x0 = lines[i].x0;
     float curr_y0 = lines[i].y0;
 
+    // Check if there's a discontinuity
+    if (fabs(prev_x1 - curr_x0) < 1e-6 && fabs(prev_y1 - curr_y0) < 1e-6) {
+        return;
+    }
+
     // Draw dotted line
-    double dashes[] = {3, 3};
+    cairo_stroke(cr);
+    double dashes[] = {1, 1};
     cairo_set_dash(cr, dashes, 2, 0);
     cairo_move_to(cr, prev_x1, prev_y1);
     cairo_line_to(cr, curr_x0, curr_y0);
@@ -129,8 +129,44 @@ static void _draw_fast_move(cairo_t *cr, Line *lines, int i, PlotOptions opts) {
     cairo_set_dash(cr, NULL, 0, 0);
 }
 
+// Move the entire plot to fit negative coordinates in non-negative space
+// Also flip it to match Y axis direction in PDF and SVG
+static void _transform(cairo_t *cr, Line *lines, int count) {
+    if (count == 0) return;
+
+    Line bbox = bounding_box(lines, count);
+    float min_x = bbox.x0, max_x = bbox.x1;
+    float min_y = bbox.y0, max_y = bbox.y1;
+    float range_x = max_x - min_x;
+    float range_y = max_y - min_y;
+
+    // Expand 10% and include origin
+    float pad_x = range_x * 0.1;
+    float pad_y = range_y * 0.1;
+    float view_x0 = min_x - pad_x, view_x1 = max_x + pad_x;
+    float view_y0 = min_y - pad_y, view_y1 = max_y + pad_y;
+
+    if (view_x0 > 0) view_x0 = 0;
+    if (view_y0 > 0) view_y0 = 0;
+    if (view_x1 < 0) view_x1 = 0;
+    if (view_y1 < 0) view_y1 = 0;
+
+    // The center of the entire view
+    float bbcx = (view_x0 + view_x1)/2;
+    float bbcy = (view_y0 + view_y1)/2;
+    
+    cairo_matrix_t m;
+    cairo_matrix_init_translate(&m, -view_x0, -view_y0);        // global translate
+    cairo_matrix_translate(&m, bbcx, bbcy);             // move origin to center
+    cairo_matrix_scale(&m, 1.0, -1.0);              // flip vertically
+    cairo_matrix_translate(&m, -bbcx, -bbcy);           // move origin back
+    cairo_transform(cr, &m);
+}
+
 void plot_to_cr(cairo_t *cr, Line *lines, int count, PlotOptions opts) {
     if (count == 0) return;
+
+    _transform(cr, lines, count);
 
     if (opts.draw_axes) {
         _plot_axes_and_grid(cr, lines, count);
@@ -140,7 +176,7 @@ void plot_to_cr(cairo_t *cr, Line *lines, int count, PlotOptions opts) {
         _compute_intensity_range(lines, count);
     }
 
-    cairo_set_source_rgb(cr, 0, 0, 0);
+    //cairo_set_source_rgb(cr, 0, 0, 0);
     cairo_set_line_width(cr, 0.2);
 
     float polyline_start_x = 0, polyline_start_y = 0;
