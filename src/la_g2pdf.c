@@ -24,6 +24,7 @@ void print_usage(const char *prog) {
 int main(int argc, char *argv[]) {
     int count = 0;
     Line *lines = parse_gcode_file(&count);
+    remove_zero_lines(&lines, &count);
     
     if (!lines) {
         fprintf(stderr, "Failed to parse gcode file\n");
