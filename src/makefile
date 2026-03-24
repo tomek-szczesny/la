@@ -5,6 +5,8 @@ default:
 	gcc -lm la_rotate.c -o la_rotate
 	gcc -lm la_strip.c -o la_strip
 	gcc -lm la_svg2g.c -o la_svg2g -lxml2 -I/usr/include/libxml2
+	gcc -g -lm la_g2svg.c -o la_g2svg -lcairo -I/usr/include/cairo
+	gcc -g -lm la_g2pdf.c -o la_g2pdf -lcairo -I/usr/include/cairo
 
 install:
 	install -p -s la_bounds /usr/bin
