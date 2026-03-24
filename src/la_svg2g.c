@@ -189,6 +189,8 @@ void walk_tree(xmlNodePtr node, Matrix transform) {
 //fprintf(stderr, "Now in node: %s\n", name);
 
     // Check if this element has a path
+    // Some SVG writers do stuff like a circle with path data instead of dimensions
+    // For such cases, we prefer path data whenever available
     const char *path_data = getpath(node);
     if (*path_data) {
         parse_path_data(path_data, combined, max_error);
