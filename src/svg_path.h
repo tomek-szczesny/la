@@ -18,6 +18,10 @@ void add_line(float x0, float y0, float x1, float y1, Matrix m);
 static float path_x = 0.0f;
 static float path_y = 0.0f;
 
+// Previous control points for smooth curves
+static float prev_cp_x = 0.0f;
+static float prev_cp_y = 0.0f;
+
 // Get path data attribute (handles arbitrary length)
 const char* getpath(xmlNodePtr node) {
     xmlChar *val = xmlGetProp(node, (const xmlChar*)"d");
@@ -372,6 +376,8 @@ void parse_path_data(const char *path_str, Matrix transform, float max_error) {
                 first_point = 1;
                 // After moveto, implicit lineto for remaining coordinates
                 cmd = absolute ? 'L' : 'l';
+                prev_cp_x = path_x;
+                prev_cp_y = path_y;
                 break;
                 
             case 'l': // Line
@@ -379,18 +385,24 @@ void parse_path_data(const char *path_str, Matrix transform, float max_error) {
                 y = next_number();
                 if (!absolute) { x += path_x; y += path_y; }
                 plot_line(x, y, transform);
+                prev_cp_x = path_x;
+                prev_cp_y = path_y;
                 break;
                 
             case 'h': // Horizontal line
                 x = next_number();
                 if (!absolute) x += path_x;
                 plot_line(x, path_y, transform);
+                prev_cp_x = path_x;
+                prev_cp_y = path_y;
                 break;
                 
             case 'v': // Vertical line
                 y = next_number();
                 if (!absolute) y += path_y;
                 plot_line(path_x, y, transform);
+                prev_cp_x = path_x;
+                prev_cp_y = path_y;
                 break;
                 
             case 'c': // Cubic Bezier
@@ -403,19 +415,23 @@ void parse_path_data(const char *path_str, Matrix transform, float max_error) {
                     x += path_x;  y += path_y;
                 }
                 plot_cubic_bezier(x1, y1, x2, y2, x, y, transform, max_error);
+                prev_cp_x = x2;
+                prev_cp_y = y2;
                 break;
                 
             case 's': // Smooth cubic Bezier
-                // Control point 1 is reflection of previous control point
-                // Placeholder: implement reflection logic
                 x2 = next_number(); y2 = next_number();
                 x = next_number();  y = next_number();
                 if (!absolute) {
                     x2 += path_x; y2 += path_y;
                     x += path_x;  y += path_y;
                 }
-                // TODO: compute x1, y1 as reflection
-                plot_cubic_bezier(path_x, path_y, x2, y2, x, y, transform, max_error);
+                // Reflect previous control point across current point
+                x1 = 2.0f * path_x - prev_cp_x;
+                y1 = 2.0f * path_y - prev_cp_y;
+                plot_cubic_bezier(x1, y1, x2, y2, x, y, transform, max_error);
+                prev_cp_x = x2;
+                prev_cp_y = y2;
                 break;
                 
             case 'q': // Quadratic Bezier
@@ -426,17 +442,21 @@ void parse_path_data(const char *path_str, Matrix transform, float max_error) {
                     x += path_x;  y += path_y;
                 }
                 plot_quadratic_bezier(x1, y1, x, y, transform, max_error);
+                prev_cp_x = x1;
+                prev_cp_y = y1;
                 break;
                 
             case 't': // Smooth quadratic Bezier
-                // Control point is reflection of previous control point
-                // Placeholder: implement reflection logic
                 x = next_number();  y = next_number();
                 if (!absolute) {
                     x += path_x;  y += path_y;
                 }
-                // TODO: compute x1, y1 as reflection
-                plot_quadratic_bezier(path_x, path_y, x, y, transform, max_error);
+                // Reflect previous control point across current point
+                x1 = 2.0f * path_x - prev_cp_x;
+                y1 = 2.0f * path_y - prev_cp_y;
+                plot_quadratic_bezier(x1, y1, x, y, transform, max_error);
+                prev_cp_x = x1;
+                prev_cp_y = y1;
                 break;
                 
             case 'a': // Arc
@@ -449,6 +469,8 @@ void parse_path_data(const char *path_str, Matrix transform, float max_error) {
                 y = next_number();
                 if (!absolute) { x += path_x; y += path_y; }
                 plot_arc(rx, ry, rotation, large_arc, sweep, x, y, transform, max_error);
+                prev_cp_x = path_x;
+                prev_cp_y = path_y;
                 break;
                 
             case 'z': // Close path
