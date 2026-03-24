@@ -32,7 +32,7 @@ static void _set_line_color(cairo_t *cr, int index, int count, Line *line, PlotO
 
     if (opts.opacity_by_intensity && _max_intensity > _min_intensity) {
         float intensity = line->s / line->f;
-        opacity = 0.5 + 0.5 * (intensity - _min_intensity) / (_max_intensity - _min_intensity);
+        opacity = 0.2 + 0.8 * (intensity - _min_intensity) / (_max_intensity - _min_intensity);
     }
 
     if (opts.color_gradient) {
