@@ -45,16 +45,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Line bbox = bounding_box(lines, count);
+    Line bbox = view_bounding_box(lines, count);
     float width = bbox.x1 - bbox.x0;
     float height = bbox.y1 - bbox.y0;
-    float pad = (width > height ? width : height) * 0.1;
-    
-    double canvas_width = width + 2 * pad;
-    double canvas_height = height + 2 * pad;
-    
+
     cairo_surface_t *surface = cairo_svg_surface_create_for_stream(
-    write_to_stdout, NULL, canvas_width, canvas_height);
+    write_to_stdout, NULL, width, height);
     cairo_svg_surface_set_document_unit(surface, CAIRO_SVG_UNIT_MM);
     cairo_t *cr = cairo_create(surface);
     

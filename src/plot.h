@@ -48,6 +48,33 @@ static void _set_line_color(cairo_t *cr, int index, int count, Line *line, PlotO
     cairo_set_source_rgba(cr, r, g, b, opacity);
 }
 
+Line view_bounding_box(Line *lines, int count) {
+    Line bbox = bounding_box(lines, count);
+    float min_x = bbox.x0, max_x = bbox.x1;
+    float min_y = bbox.y0, max_y = bbox.y1;
+    float range_x = max_x - min_x;
+    float range_y = max_y - min_y;
+
+    // Expand and include origin
+    float pad_x = range_x * 0.2;
+    float pad_y = range_y * 0.2;
+    float view_x0 = min_x - pad_x, view_x1 = max_x + pad_x;
+    float view_y0 = min_y - pad_y, view_y1 = max_y + pad_y;
+
+    if (view_x0 > 0) view_x0 = 0;
+    if (view_y0 > 0) view_y0 = 0;
+    if (view_x1 < 0) view_x1 = 0;
+    if (view_y1 < 0) view_y1 = 0;
+
+    Line ret;
+    ret.x0 = view_x0;
+    ret.x1 = view_x1;
+    ret.y0 = view_y0;
+    ret.y1 = view_y1;
+
+    return ret;
+}
+
 static int _grid_step(float range) {
     int step = 1;
     while (range / step > 50) step *= 10;
@@ -58,22 +85,9 @@ static int _grid_step(float range) {
 static void _plot_axes_and_grid(cairo_t *cr, Line *lines, int count) {
     if (count == 0) return;
 
-    Line bbox = bounding_box(lines, count);
-    float min_x = bbox.x0, max_x = bbox.x1;
-    float min_y = bbox.y0, max_y = bbox.y1;
-    float range_x = max_x - min_x;
-    float range_y = max_y - min_y;
-
-    // Expand 10% and include origin
-    float pad_x = range_x * 0.1;
-    float pad_y = range_y * 0.1;
-    float view_x0 = min_x - pad_x, view_x1 = max_x + pad_x;
-    float view_y0 = min_y - pad_y, view_y1 = max_y + pad_y;
-
-    if (view_x0 > 0) view_x0 = 0;
-    if (view_y0 > 0) view_y0 = 0;
-    if (view_x1 < 0) view_x1 = 0;
-    if (view_y1 < 0) view_y1 = 0;
+    Line bbox = view_bounding_box(lines, count);
+    float view_x0 = bbox.x0, view_x1 = bbox.x1;
+    float view_y0 = bbox.y0, view_y1 = bbox.y1;
 
     float plot_width = view_x1 - view_x0;
     float plot_height = view_y1 - view_y0;
@@ -134,22 +148,9 @@ static void _draw_fast_move(cairo_t *cr, Line *lines, int i, PlotOptions opts) {
 static void _transform(cairo_t *cr, Line *lines, int count) {
     if (count == 0) return;
 
-    Line bbox = bounding_box(lines, count);
-    float min_x = bbox.x0, max_x = bbox.x1;
-    float min_y = bbox.y0, max_y = bbox.y1;
-    float range_x = max_x - min_x;
-    float range_y = max_y - min_y;
-
-    // Expand 10% and include origin
-    float pad_x = range_x * 0.1;
-    float pad_y = range_y * 0.1;
-    float view_x0 = min_x - pad_x, view_x1 = max_x + pad_x;
-    float view_y0 = min_y - pad_y, view_y1 = max_y + pad_y;
-
-    if (view_x0 > 0) view_x0 = 0;
-    if (view_y0 > 0) view_y0 = 0;
-    if (view_x1 < 0) view_x1 = 0;
-    if (view_y1 < 0) view_y1 = 0;
+    Line bbox = view_bounding_box(lines, count);
+    float view_x0 = bbox.x0, view_x1 = bbox.x1;
+    float view_y0 = bbox.y0, view_y1 = bbox.y1;
 
     // The center of the entire view
     float bbcx = (view_x0 + view_x1)/2;
