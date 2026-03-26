@@ -15,6 +15,8 @@ install:
 	install -p -s la_rotate /usr/bin
 	install -p -s la_strip /usr/bin
 	install -p -s la_svg2g /usr/bin
+	install -p -s la_g2svg /usr/bin
+	install -p -s la_g2pdf /usr/bin
 
 uninstall:
 	rm -f /usr/bin/la_bounds
@@ -23,4 +25,6 @@ uninstall:
 	rm -f /usr/bin/la_rotate
 	rm -f /usr/bin/la_strip
 	rm -f /usr/bin/la_svg2g
+	rm -f /usr/bin/la_g2svg
+	rm -f /usr/bin/la_g2pdf
 
