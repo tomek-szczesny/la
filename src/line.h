@@ -1,11 +1,11 @@
+#ifndef line_h
+#define line_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-
-#ifndef line_h
-#define line_h
 
 typedef struct {
     float x0, y0;  // start point (from previous line)

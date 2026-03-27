@@ -1,12 +1,12 @@
+#ifndef gcode_h
+#define gcode_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
 #include "line.h"
-
-#ifndef gcode_h
-#define gcode_h
 
 typedef struct {
     char c;      // Capital letter token
