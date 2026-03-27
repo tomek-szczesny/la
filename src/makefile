@@ -1,6 +1,7 @@
 default:
 	gcc -lm la_bounds.c -o la_bounds
 	gcc -lm la_dedup.c -o la_dedup
+	gcc -lm la_dup.c -o la_dup
 	gcc -lm la_pos.c -o la_pos
 	gcc -lm la_rot.c -o la_rot
 	gcc -lm la_strip.c -o la_strip
@@ -12,6 +13,7 @@ default:
 install:
 	install -p -s la_bounds /usr/bin
 	install -p -s la_dedup /usr/bin
+	install -p -s la_dup /usr/bin
 	install -p -s la_pos /usr/bin
 	install -p -s la_rot /usr/bin
 	install -p -s la_strip /usr/bin
@@ -23,6 +25,7 @@ install:
 uninstall:
 	rm -f /usr/bin/la_bounds
 	rm -f /usr/bin/la_dedup
+	rm -f /usr/bin/la_dup
 	rm -f /usr/bin/la_position
 	rm -f /usr/bin/la_pos
 	rm -f /usr/bin/la_rotate
