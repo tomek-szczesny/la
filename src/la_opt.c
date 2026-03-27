@@ -33,7 +33,7 @@ Solution solution_init(void) {
         sol.configs[i] = 0;
     }
 
-//  fprintf(stderr, "[optimize] solution_init: created solution with %d chains\n",
+//  fprintf(stderr, "[la_opt] [optimize] solution_init: created solution with %d chains\n",
 //          sol.count);
     return sol;
 }
@@ -48,7 +48,7 @@ Solution solution_init(void) {
  * @param sol: Solution specifying chain order and configurations
  */
 void apply_solution(Solution *sol) {
-//  fprintf(stderr, "[optimize] apply_solution: applying solution with %d chains\n",
+//  fprintf(stderr, "[la_opt] [optimize] apply_solution: applying solution with %d chains\n",
 //          sol->count);
 
     Line *new_lines = (Line *)malloc(line_count * sizeof(Line));
@@ -90,7 +90,7 @@ void apply_solution(Solution *sol) {
 
     free(lines);
     lines = new_lines;
-//  fprintf(stderr, "[optimize] apply_solution: reordered %d lines\n", line_pos);
+//  fprintf(stderr, "[la_opt] [optimize] apply_solution: reordered %d lines\n", line_pos);
 }
 
 /**
@@ -123,8 +123,8 @@ float solution_cost(Solution *sol) {
  * @param sol: Input/output solution (will be overwritten with result)
  */
 void Algorithm_1(Solution *sol) {
-    fprintf(stderr, "Fast travel distance: %g\n", solution_cost(sol));
-    fprintf(stderr, "Algorithm_1: starting greedy nearest neighbor\n");
+    fprintf(stderr, "[la_opt] Fast travel distance: %g\n", solution_cost(sol));
+    fprintf(stderr, "[la_opt] Algorithm_1: starting greedy nearest neighbor\n");
     
     Solution result;
 
@@ -176,7 +176,7 @@ void Algorithm_1(Solution *sol) {
                 }
                 
                 if (best_chain == -1) {
-                    fprintf(stderr, "[optimize] ERROR: no unvisited chain found\n");
+                    fprintf(stderr, "[la_opt] [optimize] ERROR: no unvisited chain found\n");
                     break;
                 }
                 
@@ -198,7 +198,7 @@ void Algorithm_1(Solution *sol) {
                 sol->chains = result.chains;
                 sol->configs = result.configs;
                 sol->count = result.count;
-                fprintf(stderr, "Fast travel distance: %g\n", solution_cost(&result));
+                fprintf(stderr, "[la_opt] Fast travel distance: %g\n", solution_cost(&result));
             }
         }
     }
@@ -208,16 +208,15 @@ int main(int argc, char *argv[]) {
     
     lines = parse_gcode_file(&line_count);
     if (!lines) {
-        fprintf(stderr, "Failed to parse gcode file\n");
+        fprintf(stderr, "[la_opt] Failed to parse gcode file\n");
         return 1;
     }
     
-    fprintf(stderr, "Loaded %d lines\n", line_count);
     
     /* Find chains */
     chains = (Chain *)malloc(line_count * sizeof(Chain));
     find_chains(lines, line_count, chains, &ch_count);
-    fprintf(stderr, "Found %d chains\n", ch_count);
+    fprintf(stderr, "[la_opt] Loaded %d lines; Found %d chains.\n", line_count, ch_count);
     
     /* Run Algorithm 1 */
     Solution sol = solution_init();
@@ -225,10 +224,10 @@ int main(int argc, char *argv[]) {
     
     /* Apply solution and output */
     float td = calculate_travel_distance(lines, line_count);
-    fprintf(stderr, "Travel distance before optimizations: %g\n", td);
+    fprintf(stderr, "[la_opt] Travel distance before optimizations: %g\n", td);
     apply_solution(&sol);
     td = calculate_travel_distance(lines, line_count);
-    fprintf(stderr, "Travel distance after optimizations: %g\n", td);
+    fprintf(stderr, "[la_opt] Travel distance after optimizations: %g\n", td);
     
     export_gcode(lines, line_count);
     
@@ -237,6 +236,8 @@ int main(int argc, char *argv[]) {
     free(chains);
     free(sol.chains);
     free(sol.configs);
+
+    fprintf(stderr, "[la_opt] Done.\n");
     
     return 0;
 }

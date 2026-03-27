@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     int count = 0;
     Line *lines = parse_gcode_file(&count);
     if (!lines) {
-        fprintf(stderr, "Failed to parse gcode file\n");
+        fprintf(stderr, "[la_pos] Failed to parse gcode file\n");
         return 1;
     }
     
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     y -= bb.y0;
     translate_lines(lines, count, x, y);
 
-    fprintf(stderr, "Moved by (%g, %g).\n", x, y);
+    fprintf(stderr, "[la_pos] Moved by (%g, %g).\n", x, y);
 
     export_gcode(lines, count);
 

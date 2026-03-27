@@ -13,7 +13,7 @@ int main(void) {
     //int passes = detect_passes(lines,count);
     //fprintf(stderr, "Detected %d passes\n", passes);
     float cut_distance = calculate_cut_distance(lines, count);
-    fprintf(stderr, "Total cut distance: %.2f\n", cut_distance);
+    fprintf(stderr, "[la_strip] Total cut distance: %.2f\n", cut_distance);
 
     export_gcode(lines, count);
     free(lines);

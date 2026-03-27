@@ -186,7 +186,7 @@ void walk_tree(xmlNodePtr node, Matrix transform) {
     Matrix combined = matrix_multiply(transform, node_transform);
 
     const char *name = getname(node);
-//fprintf(stderr, "Now in node: %s\n", name);
+//fprintf(stderr, "[la_svg2g] Now in node: %s\n", name);
 
     // Check if this element has a path
     // Some SVG writers do stuff like a circle with path data instead of dimensions
@@ -223,7 +223,7 @@ void parse_svg() {
     
     xmlDocPtr doc = xmlParseFile("-"); // stdin
     if (!doc) {
-        fprintf(stderr, "Failed to parse SVG\n");
+        fprintf(stderr, "[la_svg2g] Failed to parse SVG\n");
         return;
     }
     
@@ -236,7 +236,7 @@ void parse_svg() {
 
 int main() {
     parse_svg();
-    fprintf(stderr, "Parsed %d cut lines from the input SVG file.\n", lines_count);
+    fprintf(stderr, "[la_svg2g] Parsed %d cut lines from the input SVG file.\n", lines_count);
     export_gcode(lines, lines_count);
     free(lines);
     return 0;

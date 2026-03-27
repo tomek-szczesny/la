@@ -83,24 +83,24 @@ int main(int argc, char *argv[]) {
     int count = 0;
     Line *lines = parse_gcode_file(&count);
     if (!lines) {
-        fprintf(stderr, "Failed to parse gcode file\n");
+        fprintf(stderr, "[la_rot] Failed to parse gcode file\n");
         return 1;
     }
     
     if (a != 0) {
-        if (minx) fprintf(stderr, "Warning: -minx flag ignored.\n");
-        if (miny) fprintf(stderr, "Warning: -miny flag ignored.\n");
+        if (minx) fprintf(stderr, "[la_rot] Warning: -minx flag ignored.\n");
+        if (miny) fprintf(stderr, "[la_rot] Warning: -miny flag ignored.\n");
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %g degrees.\n", a);
+        fprintf(stderr, "[la_rot] Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
     }
     if (minx) {
-        if (miny) fprintf(stderr, "Warning: -miny flag ignored.\n");
+        if (miny) fprintf(stderr, "[la_rot] Warning: -miny flag ignored.\n");
         a = optimize_dimension(lines, count, 0, 0.001);
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %g degrees.\n", a);
+        fprintf(stderr, "[la_rot] Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
@@ -108,13 +108,13 @@ int main(int argc, char *argv[]) {
     if (miny) {
         a = optimize_dimension(lines, count, 1, 0.001);
         rotate_lines(lines, count, a);
-        fprintf(stderr, "Rotated by %g degrees.\n", a);
+        fprintf(stderr, "[la_rot] Rotated by %g degrees.\n", a);
         export_gcode(lines, count);
         free(lines);
         return 0;
     }
 
-    if (miny) fprintf(stderr, "Warning: la_rotate got nothing to do.\n");
+    if (miny) fprintf(stderr, "[la_rot] Warning: la_rotate got nothing to do.\n");
     export_gcode(lines, count);
     free(lines);
     return 0;
