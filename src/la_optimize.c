@@ -106,6 +106,11 @@ float solution_cost(Solution *sol) {
         Point entry_pt = get_entry_point(&sol->chains[i + 1], sol->configs[i + 1]);
         total_fast_move += get_distance(exit_pt, entry_pt);
     }
+
+    // Include travel from and to the (0,0) position
+    Point origin = {0,0};
+    total_fast_move += get_distance(origin, get_entry_point(&sol->chains[0], sol->configs[0]));
+    total_fast_move += get_distance(origin, get_exit_point(&sol->chains[sol->count-1], sol->configs[sol->count-1]));
     return total_fast_move;
 }
 
@@ -118,77 +123,85 @@ float solution_cost(Solution *sol) {
  * @param sol: Input/output solution (will be overwritten with result)
  */
 void Algorithm_1(Solution *sol) {
-//  fprintf(stderr, "[optimize] Algorithm_1: starting greedy nearest neighbor\n");
+    fprintf(stderr, "Fast travel distance: %g\n", solution_cost(sol));
+    fprintf(stderr, "Algorithm_1: starting greedy nearest neighbor\n");
     
-    int *visited = (int *)malloc(ch_count * sizeof(int));
-    for (int i = 0; i < ch_count; i++) {
-        visited[i] = 0;
-    }
-    
-    Solution result = solution_init();
-    result.count = 0;
-    
-    /* Start from first chain */
-    int current_chain = 0;
-    int current_config = 0;
-    visited[current_chain] = 1;
-    result.chains[result.count] = chains[current_chain];
-    result.configs[result.count] = current_config;
-    result.count++;
-    
-//  fprintf(stderr, "[optimize]   selected chain %d with config %d\n",
-//          current_chain, current_config);
-    
-    /* Greedily select nearest neighbor */
-    for (int iter = 1; iter < ch_count; iter++) {
-        float best_dist = 1e9f;
-        int best_chain = -1;
-        int best_config = -1;
-        
-        Point current_exit = get_exit_point(&chains[current_chain], current_config);
-        
-        for (int next_ch = 0; next_ch < ch_count; next_ch++) {
-            if (visited[next_ch]) continue;
+    Solution result;
+
+    // Try all possible starting points
+    for (int init_chain = 0; init_chain < ch_count; init_chain++) {
+        int init_configs = chains[init_chain].closed ? chains[init_chain].count : 2;
+        for (int init_cfg = 0; init_cfg < init_configs; init_cfg++) {
             
-            int next_configs = chains[next_ch].closed ? chains[next_ch].count : 2;
+            result = solution_init();
             
-            for (int next_cfg = 0; next_cfg < next_configs; next_cfg++) {
-                Point next_entry = get_entry_point(&chains[next_ch], next_cfg);
-                float dist = get_distance(current_exit, next_entry);
-                
-                if (dist < best_dist) {
-                    best_dist = dist;
-                    best_chain = next_ch;
-                    best_config = next_cfg;
-                }
+            int *visited = (int *)malloc(ch_count * sizeof(int));
+            for (int i = 0; i < ch_count; i++) {
+                visited[i] = 0;
             }
-            if (best_dist == 0) break;
+            
+            /* Start from first chain */
+            int current_chain = init_chain;
+            int current_config = init_cfg;
+            result.count = 0;
+            visited[current_chain] = 1;
+            result.chains[result.count] = chains[current_chain];
+            result.configs[result.count] = current_config;
+            result.count++;
+            
+            /* Greedily select nearest neighbor */
+            for (int iter = 1; iter < ch_count; iter++) {
+                float best_dist = 1e9f;
+                int best_chain = -1;
+                int best_config = -1;
+                
+                Point current_exit = get_exit_point(&chains[current_chain], current_config);
+                
+                for (int next_ch = 0; next_ch < ch_count; next_ch++) {
+                    if (visited[next_ch]) continue;
+                    
+                    int next_configs = chains[next_ch].closed ? chains[next_ch].count : 2;
+                    
+                    for (int next_cfg = 0; next_cfg < next_configs; next_cfg++) {
+                        Point next_entry = get_entry_point(&chains[next_ch], next_cfg);
+                        float dist = get_distance(current_exit, next_entry);
+                        
+                        if (dist < best_dist) {
+                            best_dist = dist;
+                            best_chain = next_ch;
+                            best_config = next_cfg;
+                        }
+                    }
+                    if (best_dist == 0) break;
+                }
+                
+                if (best_chain == -1) {
+                    fprintf(stderr, "[optimize] ERROR: no unvisited chain found\n");
+                    break;
+                }
+                
+                visited[best_chain] = 1;
+                current_chain = best_chain;
+                current_config = best_config;
+                result.chains[result.count] = chains[best_chain];
+                result.configs[result.count] = best_config;
+                result.count++;
+            }
+            
+            free(visited);
+
+            if (solution_cost(&result) < solution_cost(sol)) {
+            
+                /* Copy result back to input solution */
+                free(sol->chains);
+                free(sol->configs);
+                sol->chains = result.chains;
+                sol->configs = result.configs;
+                sol->count = result.count;
+                fprintf(stderr, "Fast travel distance: %g\n", solution_cost(&result));
+            }
         }
-        
-        if (best_chain == -1) {
-            fprintf(stderr, "[optimize] ERROR: no unvisited chain found\n");
-            break;
-        }
-        
-        visited[best_chain] = 1;
-        current_chain = best_chain;
-        current_config = best_config;
-        result.chains[result.count] = chains[best_chain];
-        result.configs[result.count] = best_config;
-        result.count++;
-        
-//      fprintf(stderr, "[optimize]   selected chain %d with config %d (dist=%.2f)\n",
-//              best_chain, best_config, best_dist);
     }
-    
-    free(visited);
-    
-    /* Copy result back to input solution */
-    free(sol->chains);
-    free(sol->configs);
-    sol->chains = result.chains;
-    sol->configs = result.configs;
-    sol->count = result.count;
 }
 
 int main(int argc, char *argv[]) {
