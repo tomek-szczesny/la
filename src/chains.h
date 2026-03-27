@@ -32,9 +32,6 @@ typedef struct {
 /* External variables (defined in main .c file) */
 extern Line *lines;
 extern int line_count;
-//extern Chain *chains = NULL;
-//extern int ch_count = 0;
-//extern float *dist_cache = NULL;
 
 /**
  * feq - Compare two floats for equality with tolerance (1e-3).
@@ -53,7 +50,7 @@ int feq(float f1, float f2) {
  * line's startpoint.
  */
 void find_chains(Line *lines, int count, Chain *chains, int *ch_count) {
-    fprintf(stderr, "[chains] find_chains: processing %d lines\n", count);
+//  fprintf(stderr, "[chains] find_chains: processing %d lines\n", count);
 
     int chain_idx = 0;
     int i = 0;
@@ -83,15 +80,15 @@ void find_chains(Line *lines, int count, Chain *chains, int *ch_count) {
 
             if (feq(last->x1, first->x0) && feq(last->y1, first->y0)) {
                 is_closed = 1;
-                fprintf(stderr, "[chains]   Chain %d: CLOSED loop, index %d, "
-                        "length %d\n", chain_idx, chain_start, chain_len);
+//              fprintf(stderr, "[chains]   Chain %d: CLOSED loop, index %d, "
+//                      "length %d\n", chain_idx, chain_start, chain_len);
             } else {
-                fprintf(stderr, "[chains]   Chain %d: open, index %d, length %d\n",
-                        chain_idx, chain_start, chain_len);
+//              fprintf(stderr, "[chains]   Chain %d: open, index %d, length %d\n",
+//                      chain_idx, chain_start, chain_len);
             }
         } else {
-            fprintf(stderr, "[chains]   Chain %d: singleton, index %d\n",
-                    chain_idx, chain_start);
+//          fprintf(stderr, "[chains]   Chain %d: singleton, index %d\n",
+//                  chain_idx, chain_start);
         }
 
         chains[chain_idx].index = chain_start;
@@ -103,7 +100,7 @@ void find_chains(Line *lines, int count, Chain *chains, int *ch_count) {
     }
 
     *ch_count = chain_idx;
-    fprintf(stderr, "[chains] find_chains: identified %d chains total\n", chain_idx);
+//  fprintf(stderr, "[chains] find_chains: identified %d chains total\n", chain_idx);
 }
 
 /**
@@ -207,72 +204,6 @@ float get_distance(Point p1, Point p2) {
     
     return dist;
 }
-
-/**
- * precompute_distances - Precompute all inter-chain distances.
- *
- * Allocates a 2D matrix and fills it with distances between all pairs of chains
- * in all possible configurations. This avoids recalculating distances during
- * optimization algorithms.
- *
- * Matrix layout:
- *   dist_cache[from_chain * ch_count + to_chain][from_config * (to_cfg_max+1) + to_config]
- *   where to_cfg_max depends only on the "to" chain's properties.
- */
-void precompute_distances(Chain *chains, int ch_count, float **dist_cache) {
-    fprintf(stderr, "[chains] precompute_distances: ch_count=%d\n", ch_count);
-
-    /* Determine max configs needed per chain */
-    int max_configs = 0;
-    for (int i = 0; i < ch_count; i++) {
-        int chain_configs = chains[i].closed ? chains[i].count : 2;
-        if (chain_configs > max_configs) {
-            max_configs = chain_configs;
-        }
-    }
-    fprintf(stderr, "[chains]   max_configs per chain: %d\n", max_configs);
-
-    /* Allocate 2D matrix: [ch_count * ch_count][max_configs * max_configs] */
-    int matrix_rows = ch_count * ch_count;
-    int matrix_cols = max_configs * max_configs;
-
-    *dist_cache = (float *)malloc(matrix_rows * matrix_cols * sizeof(float));
-    if (!*dist_cache) {
-        fprintf(stderr, "[chains] ERROR: failed to allocate dist_cache\n");
-        return;
-    }
-
-    fprintf(stderr, "[chains]   allocated %.2f MB for distance matrix\n",
-            (matrix_rows * matrix_cols * sizeof(float)) / (1024.0 * 1024.0));
-
-    /* Fill matrix */
-    int computed = 0;
-    for (int from_ch = 0; from_ch < ch_count; from_ch++) {
-        int from_configs = chains[from_ch].closed ? chains[from_ch].count : 2;
-
-        for (int to_ch = 0; to_ch < ch_count; to_ch++) {
-            int to_configs = chains[to_ch].closed ? chains[to_ch].count : 2;
-
-            for (int from_cfg = 0; from_cfg < from_configs; from_cfg++) {
-                for (int to_cfg = 0; to_cfg < to_configs; to_cfg++) {
-                    Point exit_pt = get_exit_point(&chains[from_ch], from_cfg);
-                    Point entry_pt = get_entry_point(&chains[to_ch], to_cfg);
-                    float dist = get_distance(exit_pt, entry_pt);
-
-                    int row = from_ch * ch_count + to_ch;
-                    int col = from_cfg * (to_configs) + to_cfg;
-                    (*dist_cache)[row * matrix_cols + col] = dist;
-
-                    computed++;
-                }
-            }
-        }
-    }
-
-    fprintf(stderr, "[chains]   computed %d distances\n", computed);
-}
-
-
 
 #endif /* CHAINS_H */
 
