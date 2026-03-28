@@ -234,9 +234,28 @@ void parse_svg() {
     xmlFreeDoc(doc);
 }
 
-int main() {
+float parse_float_arg(int argc, char *argv[], const char *flag, float default_val) {
+    for (int i = 1; i < argc - 1; i++) {
+        if (strcmp(argv[i], flag) == 0) {
+            return atof(argv[i + 1]);
+        }
+    }
+    return default_val;
+}
+
+int main(int argc, char *argv[]) {
+
+    float s = parse_float_arg(argc, argv, "-s", 100.0f);
+    float f = parse_float_arg(argc, argv, "-f", 100.0f);
+    fprintf(stderr, "[la_svg2g] Using S=%g and F=%g.\n", s, f);
+
     parse_svg();
     fprintf(stderr, "[la_svg2g] Parsed %d cut lines from the input SVG file.\n", lines_count);
+
+    for (int i = 0; i < lines_count; i++) {
+        lines[i].s = s;
+        lines[i].f = f;
+    }
     export_gcode(lines, lines_count);
     free(lines);
     return 0;
