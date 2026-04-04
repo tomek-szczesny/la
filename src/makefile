@@ -6,7 +6,6 @@ LDFLAGS = -lm
 
 # Directories
 OBJDIR = .build
-DEPDIR = .deps
 BINDIR = bin
 
 # Installation directory
@@ -20,9 +19,6 @@ obj = $(addprefix $(OBJDIR)/, $(1:=.o))
 EXECS = la_bounds la_dedup la_dup la_g2pdf la_g2svg la_opt la_pos la_rot la_strip la_svg2g
 EXEC_TARGETS = $(addprefix $(BINDIR)/, $(EXECS))
 
-# Dependency files
-DEPS = $(wildcard $(DEPDIR)/*.d)
-
 # Phony targets
 .PHONY: all clean install uninstall
 
@@ -30,12 +26,12 @@ DEPS = $(wildcard $(DEPDIR)/*.d)
 all: $(EXEC_TARGETS)
 
 # Create directories
-$(shell mkdir -p $(OBJDIR) $(DEPDIR) $(BINDIR))
+$(shell mkdir -p $(OBJDIR) $(BINDIR))
 
 # Compile object files
 $(OBJDIR)/%.o: %.c
-	@mkdir -p $(dir $@) $(dir $(DEPDIR)/$*.d)
-	$(CC) $(CFLAGS) -MMD -MP -MF $(DEPDIR)/$*.d -c $< -o $@
+	@mkdir -p $(dir $@) 
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/la_g2pdf.o: la_g2vec.c
 	@mkdir -p $(dir $@)
@@ -76,9 +72,6 @@ $(BINDIR)/la_strip: $(call obj, la_strip gcode line)
 $(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lxml2 -o $@
 
-# Include dependency files
--include $(DEPS)
-
 # Installation
 install: $(EXEC_TARGETS)
 	@mkdir -p $(BINPREFIX)
@@ -96,6 +89,6 @@ uninstall:
 
 # Clean build artifacts
 clean:
-	rm -rf $(OBJDIR) $(DEPDIR) $(BINDIR)
+	rm -rf $(OBJDIR) $(BINDIR)
 	@echo "Clean complete"
 
