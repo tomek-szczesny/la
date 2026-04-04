@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include "matrix.h"
 
 typedef struct {
     float x0, y0;  // start point (from previous line)
@@ -14,352 +15,34 @@ typedef struct {
     float f;       // feed rate (F parameter)
 } Line;
 
-// Transform matrices
-// a c e
-// b d f
-// 0 0 1
-typedef struct {
-    double a, b, c, d, e, f;
-} Matrix;
-
-
 // Compare function for qsort
-int compare_lines(const void *a, const void *b) {
-    const Line *la = (const Line *)a;
-    const Line *lb = (const Line *)b;
+int compare_lines(const void *a, const void *b);
 
-    if (la->x0 != lb->x0) return (la->x0 > lb->x0) - (la->x0 < lb->x0);
-    if (la->y0 != lb->y0) return (la->y0 > lb->y0) - (la->y0 < lb->y0);
-    if (la->x1 != lb->x1) return (la->x1 > lb->x1) - (la->x1 < lb->x1);
-    if (la->y1 != lb->y1) return (la->y1 > lb->y1) - (la->y1 < lb->y1);
-    return 0;
-}
+void remove_zero_lines(Line **lines, int *count);
 
-int detect_passes(Line *lines, int count) {
-    if (count == 0) return 0;
+void deduplicate_lines(Line **lines, int *count);
 
-    // Create a copy and sort it
-    Line *sorted = malloc(count * sizeof(Line));
-    if (!sorted) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return -1;
-    }
+void print_line(Line *line, int index);
 
-    memcpy(sorted, lines, count * sizeof(Line));
-    qsort(sorted, count, sizeof(Line), compare_lines);
+int are_collinear(Line *line1, Line *line2);
 
-    // Count minimum repetitions
-    int min_passes = count;
-    int current_count = 1;
+float project_point(Line *line, float px, float py);
+int check_overlap(Line *line1, Line *line2);
 
-    for (int i = 1; i < count; i++) {
-        if (compare_lines(&sorted[i], &sorted[i-1]) == 0) {
-            current_count++;
-        } else {
-            min_passes = (current_count < min_passes) ? current_count : min_passes;
-            current_count = 1;
-        }
-    }
-    min_passes = (current_count < min_passes) ? current_count : min_passes;
+void remove_overlapping_lines(Line **lines, int *count);
 
-    free(sorted);
-    return min_passes;
-}
+float calculate_travel_distance(Line *lines, int count);
 
-void remove_zero_lines(Line **lines, int *count) {
-    Line *nozero = malloc(*count * sizeof(Line));
-    if (!nozero) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return;
-    }
+float calculate_cut_distance(Line *lines, int count);
 
-    int nozero_count = 0;
+Line bounding_box(Line *lines, int count);
 
-    for (int i = 0; i < *count; i++) {
-        float dx = (*lines)[i].x1 - (*lines)[i].x0;
-        float dy = (*lines)[i].y1 - (*lines)[i].y0;
-        float llen = sqrt(dx*dx+dy*dy);
-        if (llen > 1e-4) {
-            //fprintf(stderr, "Line %d carried over with length %f\n", i, llen);
-            nozero[nozero_count++] = (*lines)[i];
-        }
-    }
+void transform_line(Line *line, Matrix m);
 
-    free(*lines);
-    *lines = nozero;
-    *count = nozero_count;
-}
+void transform_lines(Line *lines, int count, Matrix m);
 
-void deduplicate_lines(Line **lines, int *count) {
-    Line *dedup = malloc(*count * sizeof(Line));
-    if (!dedup) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return;
-    }
+void translate_lines(Line *lines, int count, float tx, float ty);
 
-    int dedup_count = 0;
-
-    for (int i = 0; i < *count; i++) {
-        int is_duplicate = 0;
-
-        // Check if this line already exists in dedup array
-        for (int j = 0; j < dedup_count; j++) {
-            if (compare_lines(&(*lines)[i], &dedup[j]) == 0) {
-                is_duplicate = 1;
-                break;
-            }
-        }
-
-        // Add if not duplicate
-        if (!is_duplicate) {
-            dedup[dedup_count++] = (*lines)[i];
-        }
-    }
-
-    free(*lines);
-    *lines = dedup;
-    *count = dedup_count;
-}
-
-void print_line(Line *line, int index) {
-    fprintf(stderr, "Line %d: (%.6f, %.6f) -> (%.6f, %.6f) S=%.2f F=%.2f\n",
-            index, line->x0, line->y0, line->x1, line->y1, line->s, line->f);
-}
-
-int are_collinear(Line *line1, Line *line2) {
-    // Vector from line1.start to line1.end
-    double dx1 = (double)line1->x1 - (double)line1->x0;
-    double dy1 = (double)line1->y1 - (double)line1->y0;
-
-    // Vector from line1.start to line2.start
-    double dx2 = (double)line2->x0 - (double)line1->x0;
-    double dy2 = (double)line2->y0 - (double)line1->y0;
-
-    // Cross product should be ~0
-    double cross1 = dx1 * dy2 - dy1 * dx2;
-
-    // Vector from line1.start to line2.end
-    double dx3 = (double)line2->x1 - (double)line1->x0;
-    double dy3 = (double)line2->y1 - (double)line1->y0;
-
-    // Cross product should be ~0
-    double cross2 = dx1 * dy3 - dy1 * dx3;
-
-    // Use small epsilon for floating point comparison
-    double epsilon = 1e-10;
-
-    /*
-    // DEBUG
-    if (fabs(cross1) < epsilon && fabs(cross2) < epsilon) {
-        fprintf(stderr, "Collinearity detected:\n");
-        print_line(line1, 1);
-        print_line(line2, 2);
-    }
-    // END DEBUG
-    */
-
-    return fabs(cross1) < epsilon && fabs(cross2) < epsilon;
-}
-
-// Project point onto line direction, returns parameter t
-float project_point(Line *line, float px, float py) {
-    float dx = line->x1 - line->x0;
-    float dy = line->y1 - line->y0;
-    float len_sq = dx * dx + dy * dy;
-
-    if (len_sq < 1e-4) {
-        fprintf(stderr, "ERROR: Zero length line detected in project_point(). This should not have happened!\n");
-        exit(1);  // Degenerate line
-    }
-
-    float dpx = px - line->x0;
-    float dpy = py - line->y0;
-    return (dpx * dx + dpy * dy) / len_sq;
-}
-
-// Returns: -1 = no overlap, 0 = line2 embedded in line1,
-//          1 = line1 embedded in line2, 2 = partial overlap
-int check_overlap(Line *line1, Line *line2) {
-    float t2_start = project_point(line1, line2->x0, line2->y0);
-    float t2_end = project_point(line1, line2->x1, line2->y1);
-
-    // Ensure t2_start <= t2_end
-    if (t2_start > t2_end) {
-        float temp = t2_start;
-        t2_start = t2_end;
-        t2_end = temp;
-    }
-
-    // No overlap if completely outside [0,1]
-    if (t2_end < -1e-7 || t2_start > 1 + 1e-7) return -1;
-
-    // line2 embedded in line1
-    if (t2_start > -1e-7 && t2_end < 1 + 1e-7) return 0;
-
-    // line1 embedded in line2
-    if (t2_start < -1e-7 && t2_end > 1 + 1e-7) return 1;
-
-    // Partial overlap
-    return 2;
-}
-
-void remove_overlapping_lines(Line **lines, int *count) {
-    int i = 0;
-
-    while (i < *count) {
-        int j = i + 1;
-        int removed_any = 0;
-
-        while (j < *count) {
-            if (!are_collinear(&(*lines)[i], &(*lines)[j])) {
-                j++;
-                continue;
-            }
-
-            int overlap = check_overlap(&(*lines)[i], &(*lines)[j]);
-
-            if (overlap == -1) {
-                // No overlap, move to next
-                j++;
-            } else if (overlap == 0) {
-                // line[j] embedded in line[i], remove j
-                //fprintf(stderr, "Line %d embedded in line %d, removing\n", j, i);
-                memmove(&(*lines)[j], &(*lines)[j+1],
-                        (*count - j - 1) * sizeof(Line));
-                (*count)--;
-                removed_any = 1;
-            } else if (overlap == 1) {
-                // line[i] embedded in line[j], remove i and restart
-                //fprintf(stderr, "Line %d embedded in line %d, removing\n", i, j);
-                memmove(&(*lines)[i], &(*lines)[i+1],
-                        (*count - i - 1) * sizeof(Line));
-                (*count)--;
-                removed_any = 1;
-                break;
-            } else if (overlap == 2) {
-                // Partial overlap - merge into line[i]
-                //fprintf(stderr, "Lines %d and %d partially overlap, merging\n", i, j);
-                float t_j_start = project_point(&(*lines)[i], (*lines)[j].x0, (*lines)[j].y0);
-                float t_j_end = project_point(&(*lines)[i], (*lines)[j].x1, (*lines)[j].y1);
-
-                float t_min = fminf(0, fminf(t_j_start, t_j_end));
-                float t_max = fmaxf(1, fmaxf(t_j_start, t_j_end));
-
-                (*lines)[i].x0 += t_min * ((*lines)[i].x1 - (*lines)[i].x0);
-                (*lines)[i].y0 += t_min * ((*lines)[i].y1 - (*lines)[i].y0);
-                (*lines)[i].x1 = (*lines)[i].x0 + t_max * ((*lines)[i].x1 - (*lines)[i].x0);
-                (*lines)[i].y1 = (*lines)[i].y0 + t_max * ((*lines)[i].y1 - (*lines)[i].y0);
-
-                // Remove line[j]
-                memmove(&(*lines)[j], &(*lines)[j+1],
-                        (*count - j - 1) * sizeof(Line));
-                (*count)--;
-                removed_any = 1;
-            }
-        }
-
-        if (!removed_any) i++;
-    }
-}
-
-float calculate_travel_distance(Line *lines, int count) {
-    float total = 0.0;
-    float current_x = 0.0, current_y = 0.0;
-
-    for (int i = 0; i < count; i++) {
-        // Travel from current position to start of cut
-        float dx = lines[i].x0 - current_x;
-        float dy = lines[i].y0 - current_y;
-        total += sqrtf(dx * dx + dy * dy);
-
-        // Update position to end of cut
-        current_x = lines[i].x1;
-        current_y = lines[i].y1;
-    }
-
-    // Travel back to origin at the end
-    float dx = 0.0 - current_x;
-    float dy = 0.0 - current_y;
-    total += sqrtf(dx * dx + dy * dy);
-
-    return total;
-}
-
-float calculate_cut_distance(Line *lines, int count) {
-    float total = 0.0;
-
-    for (int i = 0; i < count; i++) {
-        float dx = lines[i].x1 - lines[i].x0;
-        float dy = lines[i].y1 - lines[i].y0;
-        total += sqrtf(dx * dx + dy * dy);
-    }
-
-    return total;
-}
-
-Line bounding_box(Line *lines, int count) {
-    Line bbox = {lines[0].x0, lines[0].y0, lines[0].x0, lines[0].y0, 0, 0};
-    
-    for (int i = 0; i < count; i++) {
-        if (lines[i].x0 < bbox.x0) bbox.x0 = lines[i].x0;
-        if (lines[i].y0 < bbox.y0) bbox.y0 = lines[i].y0;
-        if (lines[i].x1 < bbox.x0) bbox.x0 = lines[i].x1;
-        if (lines[i].y1 < bbox.y0) bbox.y0 = lines[i].y1;
-        if (lines[i].x0 > bbox.x1) bbox.x1 = lines[i].x0;
-        if (lines[i].y0 > bbox.y1) bbox.y1 = lines[i].y0;
-        if (lines[i].x1 > bbox.x1) bbox.x1 = lines[i].x1;
-        if (lines[i].y1 > bbox.y1) bbox.y1 = lines[i].y1;
-    }
-    
-    return bbox;
-}
-
-// Transform related code below // 
-
-Matrix matrix_multiply(Matrix a, Matrix b) {
-    return (Matrix){
-        a.a * b.a + a.b * b.c,
-        a.a * b.b + a.b * b.d,
-        a.c * b.a + a.d * b.c,
-        a.c * b.b + a.d * b.d,
-        a.e * b.a + a.f * b.c + b.e,
-        a.e * b.b + a.f * b.d + b.f
-    };
-}
-
-void transform_line(Line *line, Matrix m) {
-    float x0 = line->x0, y0 = line->y0;
-    float x1 = line->x1, y1 = line->y1;
-    
-    line->x0 = m.a * x0 + m.c * y0 + m.e;
-    line->y0 = m.b * x0 + m.d * y0 + m.f;
-    line->x1 = m.a * x1 + m.c * y1 + m.e;
-    line->y1 = m.b * x1 + m.d * y1 + m.f;
-}
-
-void transform_lines(Line *lines, int count, Matrix m) {
-    for (int i = 0; i < count; i++) {
-        transform_line(&lines[i], m);
-    }
-}
-
-void translate_lines(Line *lines, int count, float tx, float ty) {
-    Matrix m = {1, 0, 0, 1, tx, ty};
-    transform_lines(lines, count, m);
-}
-
-// Rotate around the center of a bounding box
-void rotate_lines(Line *lines, int count, float angle_deg) {
-    Line bbox = bounding_box(lines, count);
-    float cx = (bbox.x0 + bbox.x1) / 2;
-    float cy = (bbox.y0 + bbox.y1) / 2;
-    
-    float rad = angle_deg * 3.14159265f / 180.0f;
-    float c = cosf(rad);
-    float s = sinf(rad);
-    
-    Matrix m = {c, s, -s, c, cx - cx*c + cy*s, cy - cx*s - cy*c};
-    transform_lines(lines, count, m);
-}
+void rotate_lines(Line *lines, int count, float angle_deg);
 
 #endif

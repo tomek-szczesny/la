@@ -1,39 +1,97 @@
-default:
-	gcc -lm la_bounds.c -o la_bounds
-	gcc -lm la_dedup.c -o la_dedup
-	gcc -lm la_dup.c -o la_dup
-	gcc -lm la_pos.c -o la_pos
-	gcc -lm la_rot.c -o la_rot
-	gcc -lm la_strip.c -o la_strip
-	gcc -lm la_svg2g.c -o la_svg2g -lxml2 -I/usr/include/libxml2
-	gcc -lm la_g2svg.c -o la_g2svg -lcairo -I/usr/include/cairo
-	gcc -lm la_g2pdf.c -o la_g2pdf -lcairo -I/usr/include/cairo
-	gcc -lm -O3 la_opt.c -o la_opt
 
-install:
-	install -p -s la_bounds /usr/bin
-	install -p -s la_dedup /usr/bin
-	install -p -s la_dup /usr/bin
-	install -p -s la_pos /usr/bin
-	install -p -s la_rot /usr/bin
-	install -p -s la_strip /usr/bin
-	install -p -s la_svg2g /usr/bin
-	install -p -s la_g2svg /usr/bin
-	install -p -s la_g2pdf /usr/bin
-	install -p -s la_opt /usr/bin
+# Compiler and flags
+CC = gcc
+CFLAGS = -O3 -Wall -Wextra -std=c99 -g -I/usr/include/cairo -I/usr/include/libxml2
+LDFLAGS = -lm
 
+# Directories
+OBJDIR = .build
+DEPDIR = .deps
+BINDIR = bin
+
+# Installation directory
+PREFIX = /usr/local
+BINPREFIX = $(PREFIX)/bin
+
+# Helper function to add object directory prefix
+obj = $(addprefix $(OBJDIR)/, $(1:=.o))
+
+# Source files
+COMMON_SRCS = chains.c line.c plot.c gcode.c svg_path.c svg_transform.c
+COMMON_OBJS = $(addprefix $(OBJDIR)/, $(COMMON_SRCS:.c=.o))
+
+# Executables (files starting with la_)
+EXECS = la_bounds la_dedup la_dup la_g2pdf la_g2svg la_opt la_pos la_rot la_strip la_svg2g
+EXEC_TARGETS = $(addprefix $(BINDIR)/, $(EXECS))
+
+# Dependency files
+DEPS = $(wildcard $(DEPDIR)/*.d)
+
+# Phony targets
+.PHONY: all clean install uninstall
+
+# Default target
+all: $(EXEC_TARGETS)
+
+# Create directories
+$(shell mkdir -p $(OBJDIR) $(DEPDIR) $(BINDIR))
+
+# Compile object files
+$(OBJDIR)/%.o: %.c
+	@mkdir -p $(dir $@) $(dir $(DEPDIR)/$*.d)
+	$(CC) $(CFLAGS) -MMD -MP -MF $(DEPDIR)/$*.d -c $< -o $@
+
+# Link executables
+$(BINDIR)/la_bounds: $(call obj, la_bounds gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_dedup: $(call obj, la_dedup gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_dup: $(call obj, la_dup gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_g2pdf: $(call obj, la_g2pdf gcode line plot)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lcairo -o $@
+
+$(BINDIR)/la_g2svg: $(call obj, la_g2svg gcode line plot)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lcairo -o $@
+
+$(BINDIR)/la_opt: $(call obj, la_opt gcode line chains)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_pos: $(call obj, la_pos gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_rot: $(call obj, la_rot gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_strip: $(call obj, la_strip gcode line)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+$(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lxml2 -o $@
+
+# Include dependency files
+-include $(DEPS)
+
+# Installation
+install: $(EXEC_TARGETS)
+	@mkdir -p $(BINPREFIX)
+	@for exec in $(EXEC_TARGETS); do \
+		install -m 755 $$exec $(BINPREFIX)/$$(basename $$exec); \
+		echo "Installed $$(basename $$exec)"; \
+	done
+
+# Uninstallation
 uninstall:
-	rm -f /usr/bin/la_bounds
-	rm -f /usr/bin/la_dedup
-	rm -f /usr/bin/la_dup
-	rm -f /usr/bin/la_position
-	rm -f /usr/bin/la_pos
-	rm -f /usr/bin/la_rotate
-	rm -f /usr/bin/la_rot
-	rm -f /usr/bin/la_strip
-	rm -f /usr/bin/la_svg2g
-	rm -f /usr/bin/la_g2svg
-	rm -f /usr/bin/la_g2pdf
-	rm -f /usr/bin/la_optimize
-	rm -f /usr/bin/la_opt
+	@for exec in $(EXECS); do \
+		rm -f $(BINPREFIX)/$$exec; \
+		echo "Removed $$exec"; \
+	done
+
+# Clean build artifacts
+clean:
+	rm -rf $(OBJDIR) $(DEPDIR) $(BINDIR)
+	@echo "Clean complete"
 

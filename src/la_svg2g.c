@@ -103,8 +103,7 @@ void handle_rect(xmlNodePtr node, Matrix transform) {
 
     // Draw rounded rectangle using arcs for corners
     // Top-left corner arc
-    path_x = x + rx;
-    path_y = y;
+    set_pos(x+rx, y);
     plot_arc(rx, ry, 0, 0, 0, x, y + ry, transform, max_error);
     // Left edge
     plot_line(x, y + h - ry, transform);
@@ -130,8 +129,7 @@ void handle_circle(xmlNodePtr node, Matrix transform) {
     float k = BEZIER_CIRCLE_K * r;
 
     // Start at rightmost point
-    path_x = cx + r;
-    path_y = cy;
+    set_pos(cx+r, cy);
 
     // Top-right quadrant
     plot_cubic_bezier(cx + r, cy + k, cx + k, cy + r, cx, cy + r, transform, max_error);
@@ -153,8 +151,7 @@ void handle_ellipse(xmlNodePtr node, Matrix transform) {
     float ky = BEZIER_CIRCLE_K * ry;
 
     // Start at rightmost point
-    path_x = cx + rx;
-    path_y = cy;
+    set_pos(cx+rx, cy);
 
     // Top-right quadrant
     plot_cubic_bezier(cx + rx, cy + ky, cx + kx, cy + ry, cx, cy + ry, transform, max_error);

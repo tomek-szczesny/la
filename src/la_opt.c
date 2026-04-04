@@ -102,15 +102,15 @@ float solution_cost(Solution *sol) {
     float total_fast_move = 0.0f;
 
     for (int i = 0; i < sol->count - 1; i++) {
-        Point exit_pt = get_exit_point(&sol->chains[i], sol->configs[i]);
-        Point entry_pt = get_entry_point(&sol->chains[i + 1], sol->configs[i + 1]);
+        Point exit_pt = get_exit_point(lines, &sol->chains[i], sol->configs[i]);
+        Point entry_pt = get_entry_point(lines, &sol->chains[i + 1], sol->configs[i + 1]);
         total_fast_move += get_distance(exit_pt, entry_pt);
     }
 
     // Include travel from and to the (0,0) position
     Point origin = {0,0};
-    total_fast_move += get_distance(origin, get_entry_point(&sol->chains[0], sol->configs[0]));
-    total_fast_move += get_distance(origin, get_exit_point(&sol->chains[sol->count-1], sol->configs[sol->count-1]));
+    total_fast_move += get_distance(origin, get_entry_point(lines, &sol->chains[0], sol->configs[0]));
+    total_fast_move += get_distance(origin, get_exit_point(lines, &sol->chains[sol->count-1], sol->configs[sol->count-1]));
     return total_fast_move;
 }
 
@@ -155,7 +155,7 @@ void Algorithm_1(Solution *sol) {
                 int best_chain = -1;
                 int best_config = -1;
                 
-                Point current_exit = get_exit_point(&chains[current_chain], current_config);
+                Point current_exit = get_exit_point(lines, &chains[current_chain], current_config);
                 
                 for (int next_ch = 0; next_ch < ch_count; next_ch++) {
                     if (visited[next_ch]) continue;
@@ -163,7 +163,7 @@ void Algorithm_1(Solution *sol) {
                     int next_configs = chains[next_ch].closed ? chains[next_ch].count : 2;
                     
                     for (int next_cfg = 0; next_cfg < next_configs; next_cfg++) {
-                        Point next_entry = get_entry_point(&chains[next_ch], next_cfg);
+                        Point next_entry = get_entry_point(lines, &chains[next_ch], next_cfg);
                         float dist = get_distance(current_exit, next_entry);
                         
                         if (dist < best_dist) {
@@ -204,7 +204,7 @@ void Algorithm_1(Solution *sol) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main() {
     
     lines = parse_gcode_file(&line_count);
     if (!lines) {
