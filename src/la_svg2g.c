@@ -8,6 +8,7 @@
 #include "gcode.h"
 #include "svg_transform.h"
 #include "svg_path.h"
+#include "util.h"
 
 float max_error = 0.05f;
 
@@ -229,15 +230,6 @@ void parse_svg() {
     walk_tree(root, identity);
     
     xmlFreeDoc(doc);
-}
-
-float parse_float_arg(int argc, char *argv[], const char *flag, float default_val) {
-    for (int i = 1; i < argc - 1; i++) {
-        if (strcmp(argv[i], flag) == 0) {
-            return atof(argv[i + 1]);
-        }
-    }
-    return default_val;
 }
 
 int main(int argc, char *argv[]) {

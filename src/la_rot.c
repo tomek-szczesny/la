@@ -1,23 +1,5 @@
 #include "gcode.h"
-
-float parse_float_arg(int argc, char *argv[], const char *flag, float default_val) {
-    for (int i = 1; i < argc - 1; i++) {
-        if (strcmp(argv[i], flag) == 0) {
-            return atof(argv[i + 1]);
-        }
-    }
-    return default_val;
-}
-
-int has_flag(int argc, char *argv[], const char *flag) {
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], flag) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
+#include "util.h"
 
 float optimize_dimension(Line *lines, int count, int dimension, float tolerance) {
     // dimension: 0 for x, 1 for y

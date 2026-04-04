@@ -1,18 +1,9 @@
 #include "gcode.h"
-
-float parse_float_arg(int argc, char *argv[], const char *flag, float default_val) {
-    for (int i = 1; i < argc - 1; i++) {
-        if (strcmp(argv[i], flag) == 0) {
-            return atof(argv[i + 1]);
-        }
-    }
-    return default_val;
-}
+#include "util.h"
 
 int main(int argc, char *argv[]) {
 
-    float x = parse_float_arg(argc, argv, "-n", 1.0f);
-    int n = (int)round(x);
+    int n = parse_int_arg(argc, argv, "-n", 1);
 
     int count = 0;
     Line *lines = parse_gcode_file(&count);

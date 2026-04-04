@@ -16,10 +16,6 @@ BINPREFIX = $(PREFIX)/bin
 # Helper function to add object directory prefix
 obj = $(addprefix $(OBJDIR)/, $(1:=.o))
 
-# Source files
-COMMON_SRCS = chains.c line.c plot.c gcode.c svg_path.c svg_transform.c
-COMMON_OBJS = $(addprefix $(OBJDIR)/, $(COMMON_SRCS:.c=.o))
-
 # Executables (files starting with la_)
 EXECS = la_bounds la_dedup la_dup la_g2pdf la_g2svg la_opt la_pos la_rot la_strip la_svg2g
 EXEC_TARGETS = $(addprefix $(BINDIR)/, $(EXECS))
@@ -41,6 +37,14 @@ $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@) $(dir $(DEPDIR)/$*.d)
 	$(CC) $(CFLAGS) -MMD -MP -MF $(DEPDIR)/$*.d -c $< -o $@
 
+$(OBJDIR)/la_g2pdf.o: la_g2vec.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -DBUILD_PDF -c $< -o $@
+
+$(OBJDIR)/la_g2svg.o: la_g2vec.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # Link executables
 $(BINDIR)/la_bounds: $(call obj, la_bounds gcode line)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
@@ -48,28 +52,28 @@ $(BINDIR)/la_bounds: $(call obj, la_bounds gcode line)
 $(BINDIR)/la_dedup: $(call obj, la_dedup gcode line)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_dup: $(call obj, la_dup gcode line)
+$(BINDIR)/la_dup: $(call obj, la_dup gcode line util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_g2pdf: $(call obj, la_g2pdf gcode line plot)
+$(BINDIR)/la_g2pdf: $(call obj, la_g2pdf gcode line plot util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lcairo -o $@
 
-$(BINDIR)/la_g2svg: $(call obj, la_g2svg gcode line plot)
+$(BINDIR)/la_g2svg: $(call obj, la_g2svg gcode line plot util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lcairo -o $@
 
 $(BINDIR)/la_opt: $(call obj, la_opt gcode line chains)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_pos: $(call obj, la_pos gcode line)
+$(BINDIR)/la_pos: $(call obj, la_pos gcode line util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_rot: $(call obj, la_rot gcode line)
+$(BINDIR)/la_rot: $(call obj, la_rot gcode line util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 $(BINDIR)/la_strip: $(call obj, la_strip gcode line)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path)
+$(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path util)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lxml2 -o $@
 
 # Include dependency files
