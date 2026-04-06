@@ -22,12 +22,13 @@ static void _set_line_color(cairo_t *cr, int index, int count, Line *line, PlotO
         opacity = 0.2 + 0.8 * (intensity - _min_intensity) / (_max_intensity - _min_intensity);
     }
 
+    const float r0 = 1.0, g0 = 45.0/255.0, b0 = 149.0/255.0; // #FF2D95 (magenta)
+    const float r1 = 0.0, g1 = 180.0/255.0, b1 = 216.0/255.0; // #00B4D8 (cyan)
     if (opts.color_gradient) {
         float t = (count > 1) ? (float)index / (count - 1) : 0;
-        // Red (0.7,0,0) → Blue (0.2,0.2,1)
-        r = (1 - t) * 0.5 + 0.2;
-        g = 0.2 * t;
-        b = t;
+        r = r0 * (1.0f - t) + r1 * t;
+        g = g0 * (1.0f - t) + g1 * t;
+        b = b0 * (1.0f - t) + b1 * t;
     } else {
         r = g = b = 0.0;
     }
