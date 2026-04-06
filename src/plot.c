@@ -63,38 +63,12 @@ Line view_bounding_box(Line *lines, int count) {
     return ret;
 }
 
-static int _grid_step(float range) {
-    int step = 1;
-    while (range / step > 50) step *= 10;
-    while (range / step < 5) step /= 10;
-    return step;
-}
-
-static void _plot_axes_and_grid(cairo_t *cr, Line *lines, int count) {
+static void _plot_axes(cairo_t *cr, Line *lines, int count) {
     if (count == 0) return;
 
     Line bbox = view_bounding_box(lines, count);
     float view_x0 = bbox.x0, view_x1 = bbox.x1;
     float view_y0 = bbox.y0, view_y1 = bbox.y1;
-
-    float plot_width = view_x1 - view_x0;
-    float plot_height = view_y1 - view_y0;
-
-    // Grid
-    int step_x = _grid_step(plot_width);
-    int step_y = _grid_step(plot_height);
-    cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
-    cairo_set_line_width(cr, 0.1);
-
-    for (int x = (int)ceil(view_x0 / step_x) * step_x; x <= view_x1; x += step_x) {
-        cairo_move_to(cr, x, view_y0);
-        cairo_line_to(cr, x, view_y1);
-    }
-    for (int y = (int)ceil(view_y0 / step_y) * step_y; y <= view_y1; y += step_y) {
-        cairo_move_to(cr, view_x0, y);
-        cairo_line_to(cr, view_x1, y);
-    }
-    cairo_stroke(cr);
 
     // Axes
     cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
@@ -103,6 +77,30 @@ static void _plot_axes_and_grid(cairo_t *cr, Line *lines, int count) {
     cairo_line_to(cr, view_x1, 0);
     cairo_move_to(cr, 0, view_y0);
     cairo_line_to(cr, 0, view_y1);
+    cairo_stroke(cr);
+}
+
+
+static void _plot_grid(cairo_t *cr, Line *lines, int count, float step) {
+    if (count == 0) return;
+    if (step <= 0) return;
+
+    Line bbox = view_bounding_box(lines, count);
+    float view_x0 = bbox.x0, view_x1 = bbox.x1;
+    float view_y0 = bbox.y0, view_y1 = bbox.y1;
+
+    // Grid
+    cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
+    cairo_set_line_width(cr, 0.1);
+
+    for (int x = (int)ceil(view_x0 / step) * step; x <= view_x1; x += step) {
+        cairo_move_to(cr, x, view_y0);
+        cairo_line_to(cr, x, view_y1);
+    }
+    for (int y = (int)ceil(view_y0 / step) * step; y <= view_y1; y += step) {
+        cairo_move_to(cr, view_x0, y);
+        cairo_line_to(cr, view_x1, y);
+    }
     cairo_stroke(cr);
 }
 
@@ -158,8 +156,10 @@ void plot_to_cr(cairo_t *cr, Line *lines, int count, PlotOptions opts) {
     _transform(cr, lines, count);
 
     if (opts.draw_axes) {
-        _plot_axes_and_grid(cr, lines, count);
+        _plot_axes(cr, lines, count);
     }
+
+    _plot_grid(cr, lines, count, opts.draw_grid);
 
     if (opts.opacity_by_intensity || opts.color_gradient) {
         _compute_intensity_range(lines, count);

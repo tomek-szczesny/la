@@ -7,7 +7,7 @@
 
 typedef struct {
     int draw_axes;
-    int draw_grid;
+    float draw_grid;
     int opacity_by_intensity;
     int color_gradient;
     int show_fast_moves;

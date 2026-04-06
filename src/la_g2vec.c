@@ -31,6 +31,7 @@ int main(int argc, char *argv[]) {
 
     PlotOptions opts = plot_options_default();
     opts.draw_axes =                has_flag(argc, argv, "-a");
+    opts.draw_grid =                parse_float_arg(argc, argv, "-g", 0.0f);
     opts.opacity_by_intensity =     has_flag(argc, argv, "-i");
     opts.color_gradient =           has_flag(argc, argv, "-c");
     opts.show_fast_moves =          has_flag(argc, argv, "-f");
