@@ -1,7 +1,7 @@
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -O3 -Wall -Wextra -std=c99 -g -I/usr/include/cairo -I/usr/include/libxml2
+CFLAGS = -O3 -Wall -Wextra -std=c99 -g -I/usr/include/cairo -I/usr/include/libxml2 $(shell pkg-config --cflags glib-2.0)
 LDFLAGS = -lm
 
 # Directories
@@ -32,6 +32,10 @@ $(shell mkdir -p $(OBJDIR) $(BINDIR))
 $(OBJDIR)/%.o: %.c
 	@mkdir -p $(dir $@) 
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/png_parser.o: png_parser.c
+	@mkdir -p $(dir $@) 
+	$(CC) $(CFLAGS) -c $< -lpng -o $@
 
 $(OBJDIR)/la_g2pdf.o: la_g2vec.c
 	@mkdir -p $(dir $@)
@@ -69,8 +73,8 @@ $(BINDIR)/la_rot: $(call obj, la_rot gcode line util)
 $(BINDIR)/la_strip: $(call obj, la_strip gcode line)
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-$(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path util)
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lxml2 -o $@
+$(BINDIR)/la_svg2g: $(call obj, la_svg2g gcode line svg_transform svg_path util png_parser raster)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -lxml2 -lglib-2.0 -lpng -o $@
 
 # Installation
 install: $(EXEC_TARGETS)

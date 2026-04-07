@@ -1,11 +1,13 @@
+#include <glib.h>   // base64 decoding
 #include <libxml2/libxml/parser.h>
 #include <libxml2/libxml/tree.h>
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <math.h>
 #include "line.h"
 #include "gcode.h"
+#include "png_parser.h"
 #include "svg_transform.h"
 #include "svg_path.h"
 #include "util.h"
@@ -175,6 +177,64 @@ void handle_line(xmlNodePtr node, Matrix transform) {
     add_line(x1, y1, x2, y2, transform);
 }
 
+void handle_image(xmlNodePtr node, Matrix transform) {
+    uint32_t width, height, x = 0, y = 0;
+    
+    // Parse attributes
+    width  = getattrf(node, "width");
+    height = getattrf(node, "height");
+    x      = getattrf(node, "x");
+    y      = getattrf(node, "y");
+    
+    // Get href
+    xmlChar *href = xmlGetProp(node, BAD_CAST "href");
+    if (!href) {
+        fprintf(stderr, "Image: missing href\n");
+        return;
+    }
+    
+    // Validate format
+    const char *prefix = "data:image/png;base64,";
+    if (strncmp((char*)href, prefix, strlen(prefix)) != 0) {
+        fprintf(stderr, "Image: unsupported format (expected data:image/png;base64,)\n");
+        xmlFree(href);
+        return;
+    }
+    
+    // Decode base64
+    gsize decoded_len;
+    guchar *png_data = g_base64_decode((char*)href + strlen(prefix), &decoded_len);
+    xmlFree(href);
+    
+    if (!png_data) {
+        fprintf(stderr, "Image: base64 decode failed\n");
+        return;
+    }
+    
+    // Parse PNG
+    RGBAImage *img = png_parse(png_data, decoded_len);
+    g_free(png_data);
+    
+    if (!img) {
+        fprintf(stderr, "Image: PNG parse failed\n");
+        return;
+    }
+    
+    // Output stats
+    fprintf(stderr, "Image loaded: SVG dims=%ux%u px at (%u,%u), PNG dims=%ux%u px, pixels=%u\n",
+            width, height, x, y, img->width, img->height, img->width * img->height);
+    
+    // Calculate pixel stats
+    uint32_t min_a = 255, max_a = 0;
+    for (uint32_t i = 0; i < img->width * img->height; i++) {
+        if (img->pixels[i].a < min_a) min_a = img->pixels[i].a;
+        if (img->pixels[i].a > max_a) max_a = img->pixels[i].a;
+    }
+    fprintf(stderr, "  Alpha range: %u-%u\n", min_a, max_a);
+    
+    rgbaimage_free(img);
+}
+
 // Recursive tree walker
 void walk_tree(xmlNodePtr node, Matrix transform) {
     if (!node) return;
@@ -204,6 +264,8 @@ void walk_tree(xmlNodePtr node, Matrix transform) {
         handle_ellipse(node, combined);
     } else if (strcmp(name, "line") == 0) {
         handle_line(node, combined);
+    } else if (strcmp(name, "image") == 0) {
+        handle_image(node, combined);
     } else if (strcmp(name, "g") == 0 || strcmp(name, "svg") == 0) {
         // Group: recurse into children with combined transform
         for (xmlNodePtr child = node->children; child; child = child->next) {
