@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     remove_zero_lines(&lines, &count);
     
     if (!lines) {
-        fprintf(stderr, "[la_g2svg] Failed to parse gcode file\n");
+        fprintf(stderr, "[la_g2vec] Failed to parse gcode file\n");
         return 1;
     }
 
@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     
     cairo_destroy(cr);
     cairo_surface_destroy(surface);
-    fprintf(stderr, "[la_g2svg] Done.\n");
+    fprintf(stderr, "[la_g2vec] Done.\n");
     
     free(lines);
     return 0;
