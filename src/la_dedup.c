@@ -11,7 +11,7 @@ int main(void) {
     }
 
     float cut_distance = calculate_cut_distance(lines, count);
-    fprintf(stderr, "[la_dedup] Total cut distance: %.g\n", cut_distance);
+    fprintf(stderr, "[la_dedup] Total cut distance: %.2f\n", cut_distance);
 
     remove_zero_lines(&lines, &count);
     deduplicate_lines(&lines, &count);
@@ -20,8 +20,8 @@ int main(void) {
     remove_overlapping_lines(&lines, &count);
 
     float cut_distance_after = calculate_cut_distance(lines, count);
-    fprintf(stderr, "[la_dedup] Total cut distance after deduplication: %.g", cut_distance_after);
-    fprintf(stderr, " (%g%% less)\n", 100*(1-(cut_distance_after/cut_distance)));
+    fprintf(stderr, "[la_dedup] Total cut distance after deduplication: %.2f", cut_distance_after);
+    fprintf(stderr, " (%.2f%% less)\n", 100*(1-(cut_distance_after/cut_distance)));
 
     export_gcode(lines, count);
     free(lines);

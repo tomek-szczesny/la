@@ -123,7 +123,7 @@ float solution_cost(Solution *sol) {
  * @param sol: Input/output solution (will be overwritten with result)
  */
 void Algorithm_1(Solution *sol) {
-    fprintf(stderr, "[la_opt] Fast travel distance: %g\n", solution_cost(sol));
+    fprintf(stderr, "[la_opt] Fast travel distance: %.2f\n", solution_cost(sol));
     fprintf(stderr, "[la_opt] Algorithm_1: starting greedy nearest neighbor\n");
     
     Solution result;
@@ -198,7 +198,7 @@ void Algorithm_1(Solution *sol) {
                 sol->chains = result.chains;
                 sol->configs = result.configs;
                 sol->count = result.count;
-                fprintf(stderr, "[la_opt] Fast travel distance: %g\n", solution_cost(&result));
+                fprintf(stderr, "[la_opt] Fast travel distance: %.2f\n", solution_cost(&result));
             }
         }
     }
@@ -224,10 +224,10 @@ int main() {
     
     /* Apply solution and output */
     float td = calculate_travel_distance(lines, line_count);
-    fprintf(stderr, "[la_opt] Travel distance before optimizations: %g\n", td);
+    fprintf(stderr, "[la_opt] Travel distance before optimizations: %.2f\n", td);
     apply_solution(&sol);
     td = calculate_travel_distance(lines, line_count);
-    fprintf(stderr, "[la_opt] Travel distance after optimizations: %g\n", td);
+    fprintf(stderr, "[la_opt] Travel distance after optimizations: %.2f\n", td);
     
     export_gcode(lines, line_count);
     

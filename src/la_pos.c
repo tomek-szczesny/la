@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     y -= bb.y0;
     translate_lines(lines, count, x, y);
 
-    fprintf(stderr, "[la_pos] Moved by (%g, %g).\n", x, y);
+    fprintf(stderr, "[la_pos] Moved by (%.2f, %.2f).\n", x, y);
 
     export_gcode(lines, count);
 
