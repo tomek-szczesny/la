@@ -9,10 +9,6 @@
  * ============================================================================ */
 
 typedef struct {
-    float x, y;
-} Point;
-
-typedef struct {
     int index;      /* Index of first line in this chain within lines array */
     int count;      /* Number of consecutive lines in this chain */
     int closed;     /* 1 if closed loop, 0 if open chain */

@@ -9,6 +9,10 @@
 #include "matrix.h"
 
 typedef struct {
+    float x, y;
+} Point;
+
+typedef struct {
     float x0, y0;  // start point (from previous line)
     float x1, y1;  // end point (current G1)
     float s;       // power (S parameter)
