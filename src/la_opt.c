@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdatomic.h>
 #include "gcode.h"
 #include "chains.h"
 
 /* ============================================================================
  * PUBLIC VARIABLES
  * ============================================================================ */
+
+volatile sig_atomic_t timeout = 0;
 
 Line *lines = NULL;
 int line_count = 0;
@@ -130,8 +135,10 @@ void Algorithm_1(Solution *sol) {
 
     // Try all possible starting points
     for (int init_chain = 0; init_chain < ch_count; init_chain++) {
+        if (timeout) break;
         int init_configs = chains[init_chain].closed ? chains[init_chain].count : 2;
         for (int init_cfg = 0; init_cfg < init_configs; init_cfg++) {
+            if (timeout) break;
             
             result = solution_init();
             
@@ -204,8 +211,22 @@ void Algorithm_1(Solution *sol) {
     }
 }
 
+// Support for signals
+void sig_handler(int sig) {
+    (void) sig;
+    timeout = 1;
+}
+
 int main() {
     
+    /* Signal handling to exit the process earlier */
+    struct sigaction sa = {0};
+    sa.sa_handler = sig_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+
     lines = parse_gcode_file(&line_count);
     if (!lines) {
         fprintf(stderr, "[la_opt] Failed to parse gcode file\n");
@@ -217,6 +238,8 @@ int main() {
     chains = (Chain *)malloc(line_count * sizeof(Chain));
     find_chains(lines, line_count, chains, &ch_count);
     fprintf(stderr, "[la_opt] Loaded %d lines; Found %d chains.\n", line_count, ch_count);
+    fprintf(stderr, "[la_opt] If you feel impatient, hit Ctrl+C at any time to abort,\n");
+    fprintf(stderr, "[la_opt] keeping the best result found so far.\n");
     
     /* Run Algorithm 1 */
     Solution sol = solution_init();
