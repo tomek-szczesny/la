@@ -48,5 +48,7 @@ void transform_lines(Line *lines, int count, Matrix m);
 void translate_lines(Line *lines, int count, float tx, float ty);
 
 void rotate_lines(Line *lines, int count, float angle_deg);
+    
+void flip_lines_v(Line *lines, int count);
 
 #endif

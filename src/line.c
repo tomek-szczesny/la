@@ -328,3 +328,11 @@ void rotate_lines(Line *lines, int count, float angle_deg) {
     transform_lines(lines, count, m);
 }
 
+// Flip vertically around around the center of a bounding box
+void flip_lines_v(Line *lines, int count) {
+    Line bbox = bounding_box(lines, count);
+    float cy = (bbox.y0 + bbox.y1) / 2;
+    
+    Matrix m = {1, 0, 0, -1, 0, 2*cy};
+    transform_lines(lines, count, m);
+}

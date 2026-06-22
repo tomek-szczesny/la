@@ -221,7 +221,7 @@ void handle_image(xmlNodePtr node, Matrix transform) {
     }
     
     // Output stats
-    fprintf(stderr, "Image loaded: SVG dims=%ux%u px at (%u,%u), PNG dims=%ux%u px, pixels=%u\n",
+    fprintf(stderr, "Image loaded: SVG dims=%ux%u at (%u,%u), PNG dims=%ux%u px, pixels=%u\n",
             width, height, x, y, img->width, img->height, img->width * img->height);
     
     // Calculate pixel stats
@@ -232,7 +232,25 @@ void handle_image(xmlNodePtr node, Matrix transform) {
     }
     fprintf(stderr, "  Alpha range: %u-%u\n", min_a, max_a);
     
+        // Convert to grayscale
+    GrayImage *gray = rgba_to_gray(img);
     rgbaimage_free(img);
+
+    if (!gray) {
+        fprintf(stderr, "[handle_image]: grayscale conversion failed\n");
+        return;
+    }
+
+    grayimage_stretch_contrast(gray, 0.01);
+    grayimage_dither_floyd_steinberg(gray, 3);
+
+    // Export
+    if (grayimage_export_pgm(gray) != 0) {
+        fprintf(stderr, "Image: export failed\n");
+    }
+
+    grayimage_free(gray);
+
 }
 
 // Recursive tree walker
@@ -298,7 +316,7 @@ int main(int argc, char *argv[]) {
 
     float s = parse_float_arg(argc, argv, "-s", 100.0f);
     float f = parse_float_arg(argc, argv, "-f", 100.0f);
-    fprintf(stderr, "[la_svg2g] Using S=%g and F=%g.\n", s, f);
+    fprintf(stderr, "[la_svg2g] Using S=%.2f and F=%.2f.\n", s, f);
 
     parse_svg();
     fprintf(stderr, "[la_svg2g] Parsed %d cut lines from the input SVG file.\n", lines_count);
@@ -307,6 +325,7 @@ int main(int argc, char *argv[]) {
         lines[i].s = s;
         lines[i].f = f;
     }
+    flip_lines_v(lines, lines_count);
     export_gcode(lines, lines_count);
     free(lines);
     return 0;
